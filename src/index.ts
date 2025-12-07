@@ -7,7 +7,7 @@ import { cacheRoutes } from "./utils/cache-routes";
 dotenv.config();
 
 const app = express();
-const PORT = 4040;
+const PORT = process.env.PORT || 4040;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
