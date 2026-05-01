@@ -4,12 +4,14 @@ export const allowedExtensions = ['.ts', '.png', '.jpg', '.webp', '.ico', '.html
 
 export class LineTransform extends Transform {
   private buffer: string;
-  private baseUrl: string;
+  private url: string;
+  private queryHeaders: string
 
-  constructor(baseUrl: string) {
+  constructor(url: string, queryHeaders: string) {
     super();
     this.buffer = '';
-    this.baseUrl = baseUrl;
+    this.url = url;
+    this.queryHeaders = queryHeaders;
   }
 
   _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
@@ -34,18 +36,16 @@ export class LineTransform extends Transform {
   }
 
   private processLine(line: string): string {
-    if (line.endsWith('.m3u8') || line.endsWith('.ts')) {
-      return `m3u8-proxy?url=${this.baseUrl}${line}`;
+    const baseUrl = this.url.replace(/[^/]+$/, "");
+
+    if (!line.startsWith("#")) {
+      const resolvedUrl = !line.startsWith("https://") ? `${baseUrl}${line}` : line;
+      return `m3u8-proxy?url=${encodeURIComponent(resolvedUrl)}&headers=${encodeURIComponent(this.queryHeaders)}`;
     }
 
-    if (line.startsWith("http") && !line.endsWith(".m3u8")) {
-      return `m3u8-proxy?url=${encodeURIComponent(line)}`;
-    }
-
-    if (allowedExtensions.some(ext => line.endsWith(ext))) {
-      return `m3u8-proxy?url=${line}`;
-    }
-
-    return line;
+    return line.replace(/URI="([^"]+)"/g, (_ /** match */, value) => {
+      const resolvedUrl = !value.startsWith("https://") ? `${baseUrl}${value}` : value;
+      return `URI="m3u8-proxy?url=${encodeURIComponent(resolvedUrl)}&headers=${encodeURIComponent(this.queryHeaders)}"`;
+    });
   }
 }

@@ -5,21 +5,24 @@ import { allowedExtensions, LineTransform } from "../utils/line-transform";
 export const m3u8Proxy = async (req: Request, res: Response) => {
   try {
     const url = req.query.url as string;
+    const queryHeaders = req.query.headers as string;
+    const customHeaders = queryHeaders ? JSON.parse(queryHeaders) : {};
+
     if (!url) return res.status(400).json("url is required");
 
     const isStaticFiles = allowedExtensions.some(ext => url.endsWith(ext));
-    const baseUrl = url.replace(/[^/]+$/, "");
 
-    const response = await axios.get(url, {
+    const responseText = await axios.get(url, {
+      responseType: 'text',
+      headers: customHeaders
+    })
+
+    const responseStream = await axios.get(url, {
       responseType: 'stream',
-      headers: {
-        Accept: "*/*",
-        Referer: "https://megacloud.club/",
-        Origin: "https://megacloud.club"
-      }
+      headers: customHeaders
     });
 
-    const headers = { ...response.headers };
+    const headers = { ...responseStream.headers };
     if (!isStaticFiles) delete headers['content-length'];
 
     res.cacheControl = { maxAge: headers['cache-control'] };
@@ -28,16 +31,12 @@ export const m3u8Proxy = async (req: Request, res: Response) => {
     headers["Access-Control-Allow-Methods"] = "*"
     res.set(headers);
 
-    if (isStaticFiles) {
-      return response.data.pipe(res);
+    if (!responseText.data.startsWith("#EXTM3U")) {
+      return responseStream.data.pipe(res);
     }
 
-    if (!url.endsWith(".m3u8")) {
-      return response.data.pipe(res);
-    }
-
-    const transform = new LineTransform(baseUrl);
-    response.data.pipe(transform).pipe(res);
+    const transform = new LineTransform(url, queryHeaders);
+    responseStream.data.pipe(transform).pipe(res);
   } catch (error: any) {
     console.log(error.message);
     res.status(500).send('Internal Server Error');
