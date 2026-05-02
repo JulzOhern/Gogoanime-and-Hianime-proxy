@@ -37,15 +37,24 @@ export class LineTransform extends Transform {
 
   private processLine(line: string): string {
     const baseUrl = this.url.replace(/[^/]+$/, "");
+    const queryHeaders = this.queryHeaders;
+
+    if (line.startsWith("//")) {
+      return `m3u8-proxy?url=${encodeURIComponent(`https:${line}`)}`;
+    }
 
     if (!line.startsWith("#")) {
       const resolvedUrl = !line.startsWith("https://") ? `${baseUrl}${line}` : line;
-      return `m3u8-proxy?url=${encodeURIComponent(resolvedUrl)}&headers=${encodeURIComponent(this.queryHeaders)}`;
+      return `m3u8-proxy?url=${encodeURIComponent(resolvedUrl)}&headers=${encodeURIComponent(queryHeaders)}`;
     }
 
-    return line.replace(/URI="([^"]+)"/g, (_ /** match */, value) => {
-      const resolvedUrl = !value.startsWith("https://") ? `${baseUrl}${value}` : value;
-      return `URI="m3u8-proxy?url=${encodeURIComponent(resolvedUrl)}&headers=${encodeURIComponent(this.queryHeaders)}"`;
-    });
+    if (line.includes("URI=")) {
+      return line.replace(/URI="([^"]+)"/g, (match, value) => {
+        const resolvedUrl = !value.startsWith("https://") ? `${baseUrl}${value}` : value;
+        return `URI="m3u8-proxy?url=${encodeURIComponent(resolvedUrl)}&headers=${encodeURIComponent(queryHeaders)}"`;
+      });
+    }
+
+    return line;
   }
 }
