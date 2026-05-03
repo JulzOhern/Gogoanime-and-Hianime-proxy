@@ -55,13 +55,22 @@ http://localhost:4040/m3u8-proxy?url=YOUR_M3U8_URL&headers={"Referer":"https://e
 3. Rewrites: Segment URLs, Key URIs (AES-128)
 4. Proxies all media requests through the server
 
+---
 
+## 🛠️ Issues / Bug Reports
 
+If you encounter any M3U8 links that are not working, please create an issue in this repository.
 
+[Open an Issue](https://github.com/JulzOhern/Gogoanime-and-Hianime-proxy/issues/new)
 
+### When reporting, please include:
 
+- The M3U8 URL that is not working
+- The website/source where the M3U8 came from
+- The error message (if any)
+- Screenshots (optional but helpful)
 
-
+I will check and fix it as soon as possible.
 
 
 
